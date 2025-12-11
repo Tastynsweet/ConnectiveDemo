@@ -11,6 +11,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -35,6 +36,15 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [historyVisible, setHistoryVisible] = useState(false);
+  const [hvacOn, setHvacOn] = useState(false);
+  const [targetTemp, setTargetTemp] = useState(72);
+  const [hvacConfirmVisible, setHvacConfirmVisible] = useState(false);
+  const [pendingHvacValue, setPendingHvacValue] = useState<boolean | null>(null);
+  const [prevHvacValue, setPrevHvacValue] = useState<boolean | null>(null);
+  const [popupAction, setPopupAction] = useState<string | null>(null);
+
+  const increaseTemp = () => setTargetTemp(t => Math.min(90, t + 1));
+  const decreaseTemp = () => setTargetTemp(t => Math.max(50, t - 1));
   
   const date = new Date();
   const dateString = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -124,7 +134,8 @@ export default function App() {
         </View>
 
         <View style={styles.content}>
-          <View style={styles.heroCard}>
+          {/* Month Card Row */}
+          <View style={[styles.heroCard, styles.topCard, { marginBottom: 20 }]}>
             <Text style={styles.cardLabel}>MONTH-TO-DATE COST</Text>
             <Text style={styles.heroValue}>$145.20</Text>
             <View style={styles.badge}>
@@ -132,26 +143,56 @@ export default function App() {
             </View>
           </View>
 
-          <View style={styles.card}>
+          {/* Thermostat Card with all controls */}
+          <View style={[styles.card, { marginBottom: 0 }]}>
             <View style={styles.cardHeader}>
               <View style={{flexDirection:'row', alignItems:'center'}}>
                 <Ionicons name="thermometer-outline" size={20} color={COLORS.textGray} style={{marginRight:5}}/>
                 <Text style={styles.cardTitle}>Thermostat</Text>
               </View>
               <View style={styles.statusBadge}>
-                <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Cooling</Text>
+                <View style={[styles.statusDot, { backgroundColor: hvacOn ? '#34C759' : '#999' }]} />
+                <Text style={[styles.statusText, { color: hvacOn ? '#34C759' : '#999' }]}>{!hvacOn ? 'Off' : (targetTemp > 76 ? 'Heating' : 'Cooling')}</Text>
               </View>
             </View>
             
-            <View style={styles.thermostatRow}>
-              <Text style={styles.tempLarge}>72°</Text>
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => setHistoryVisible(true)}
-              >
-                <Text style={styles.actionButtonText}>View Usage</Text>
+            {/* Thermostat temperature display */}
+            <Text style={styles.tempLarge}>{targetTemp}°</Text>
+            
+            {/* +/- Control buttons - Spaced out */}
+            <View style={[styles.controlRow, { gap: 40 }]}>
+              <TouchableOpacity style={styles.controlButton} onPress={decreaseTemp}>
+                <Text style={styles.controlButtonText}>−</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.controlButton} onPress={increaseTemp}>
+                <Text style={styles.controlButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* View Usage button */}
+            <TouchableOpacity 
+              style={[styles.actionButton, { alignSelf: 'center', marginTop: 16 }]}
+              onPress={() => setHistoryVisible(true)}
+            >
+              <Text style={styles.actionButtonText}>View Usage</Text>
+            </TouchableOpacity>
+            
+            {/* HVAC Switch at bottom left */}
+            <View style={styles.switchBottomContainer}>
+              <View style={styles.thermostatSwitchContainer}>
+                <Switch
+                  value={hvacOn}
+                  onValueChange={(val) => {
+                    setPrevHvacValue(hvacOn);
+                    setHvacOn(val);
+                    setPopupAction(val ? 'ON' : 'OFF');
+                    setHvacConfirmVisible(true);
+                  }}
+                  trackColor={{ true: '#A8E6CF', false: '#E5E5EA' }}
+                  thumbColor={hvacOn ? COLORS.primary : '#fff'}
+                  style={styles.thermostatSwitch}
+                />
+              </View>
             </View>
           </View>
         </View>
@@ -187,7 +228,7 @@ export default function App() {
                 <ScrollView horizontal={true} showsHorizontalScrollIndicator={true} style={{marginHorizontal: -10}}>
                   <LineChart
                     data={{
-                      labels: ["12P", "2P", "4P", "6P", "8P", "10P", "12A", "2A", "4A", "6A"],
+                      labels: ["12PM", "2PM", "4PM", "6PM", "8PM", "10PM", "12AM", "2AM", "4AM", "6AM"],
                       datasets: [
                         { 
                           data: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 
@@ -239,6 +280,41 @@ export default function App() {
           </View>
         </Modal>
 
+        {/* HVAC Confirm Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={hvacConfirmVisible}
+          onRequestClose={() => setHvacConfirmVisible(false)}
+        >
+          <View style={styles.hvacModalOverlay}>
+              <View style={styles.hvacModalContent}>
+              <Text style={styles.modalTitle}>Confirm HVAC</Text>
+              <Text style={{color: '#444', marginTop: 8, marginBottom: 20}}>
+                {popupAction ? `Are you sure you want to turn the HVAC ${popupAction}?` : 'Are you sure you want to turn HVAC?'}
+              </Text>
+              <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
+                <TouchableOpacity style={[styles.actionButton, {backgroundColor: '#F2F2F7', marginRight: 10}]} onPress={() => {
+                  // cancel: revert switch and close modal without changing text
+                  if (prevHvacValue !== null) setHvacOn(prevHvacValue);
+                  setPrevHvacValue(null);
+                  setHvacConfirmVisible(false);
+                }}>
+                  <Text style={{color: '#666', fontWeight: '700'}}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionButton, {backgroundColor: COLORS.primary}]} onPress={() => {
+                  // confirm: keep switch state and close modal
+                  setPopupAction(hvacOn ? 'ON' : 'OFF');
+                  setPrevHvacValue(null);
+                  setHvacConfirmVisible(false);
+                }}>
+                  <Text style={{color: '#fff', fontWeight: '700'}}>Yes</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
       </SafeAreaView>
     </View>
   );
@@ -278,21 +354,41 @@ const styles = StyleSheet.create({
   profileImage: { width: 45, height: 45, borderRadius: 25, borderWidth: 2, borderColor: 'white' },
 
   // Cards
-  heroCard: { backgroundColor: COLORS.card, borderRadius: 24, padding: 25, marginBottom: 20, alignItems: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12 },
+  heroCard: { backgroundColor: COLORS.card, borderRadius: 24, padding: 20, marginBottom: 20, alignItems: 'flex-start', shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12 },
   cardLabel: { fontSize: 12, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 10 },
   heroValue: { fontSize: 52, fontWeight: '800', color: '#1C1C1E' },
   badge: { backgroundColor: '#E4F9E9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
   badgeText: { color: '#00A836', fontSize: 13, fontWeight: '700' },
 
   card: { backgroundColor: COLORS.card, borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8 },
+  rowCards: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  cardHalf: { flex: 1 },
+  hvacCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 0, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6, width: '100%' },
+  hvacBottomCard: { minHeight: 140 },
+  hvacStatusText: { fontSize: 16, fontWeight: '700', color: '#4A4A4A' },
+  hvacDot: { width: 10, height: 10, borderRadius: 6, marginRight: 10 },
+  hvacSwitch: { transform: [{ scale: 1.8 }] },
+  topCard: { minHeight: 180 },
+  controlCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 20, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 6 },
+  controlBottomCard: { minHeight: 140 },
+  controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  controlButton: { backgroundColor: '#F2F2F7', width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 4 },
+  controlButtonText: { fontSize: 52, color: COLORS.textDark, lineHeight: 52 },
+  controlTemp: { fontSize: 28, fontWeight: '700', color: '#1c1c1e' },
+  leftColumn: { flex: 1, marginRight: 12 },
+  rightColumn: { flex: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: '700', color: '#1c1c1e' },
   statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F2F7', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
   statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#34C759', marginRight: 6 },
-  statusText: { fontSize: 14, fontWeight: '600', color: '#34C759' },
+  statusText: { fontSize: 18, fontWeight: '600', color: '#34C759' },
 
   thermostatRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tempLarge: { fontSize: 56, fontWeight: '300', color: '#1c1c1e' },
+  tempLarge: { fontSize: 80, fontWeight: '300', color: '#1c1c1e', marginBottom: 16 },
+  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 12, gap: 20 },
+  thermostatSwitchContainer: { justifyContent: 'center', alignItems: 'center' },
+  thermostatSwitch: { transform: [{ scale: 1.8 }] },
+  switchBottomContainer: { position: 'absolute', bottom: 30, left: 30 },
   
   primaryButton: { backgroundColor: COLORS.primary, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 10, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: {width:0, height:4} },
   primaryButtonText: { color: 'white', fontSize: 17, fontWeight: '700' },
@@ -329,4 +425,6 @@ const styles = StyleSheet.create({
 
   resolveButton: { width: '100%', backgroundColor: COLORS.alert, padding: 18, borderRadius: 16, alignItems: 'center', marginTop: 30 },
   resolveButtonText: { color: 'white', fontSize: 18, fontWeight: '700' },
+  hvacModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
+  hvacModalContent: { width: '85%', backgroundColor: 'white', padding: 20, borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
 });
