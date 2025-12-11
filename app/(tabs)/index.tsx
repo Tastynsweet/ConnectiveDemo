@@ -39,9 +39,9 @@ export default function App() {
   const [hvacOn, setHvacOn] = useState(false);
   const [targetTemp, setTargetTemp] = useState(72);
   const [hvacConfirmVisible, setHvacConfirmVisible] = useState(false);
-  const [pendingHvacValue, setPendingHvacValue] = useState<boolean | null>(null);
-  const [prevHvacValue, setPrevHvacValue] = useState<boolean | null>(null);
-  const [popupAction, setPopupAction] = useState<string | null>(null);
+  const [pendingHvacValue, setPendingHvacValue] = useState(null);
+  const [prevHvacValue, setPrevHvacValue] = useState(null);
+  const [popupAction, setPopupAction] = useState(null);
 
   const increaseTemp = () => setTargetTemp(t => Math.min(90, t + 1));
   const decreaseTemp = () => setTargetTemp(t => Math.max(50, t - 1));
@@ -71,7 +71,7 @@ export default function App() {
       >
         <View style={styles.loginContent}>
           <View style={styles.logoSection}>
-            {/* LOGO IMAGE */}
+            {/* LOGO IMAGE - Ensure file is named 'Logo.png' in assets */}
             <Image 
               source={require('../../assets/Logo.png')} 
               style={styles.logoImage} 
@@ -117,10 +117,10 @@ export default function App() {
       <BackgroundDesign />
       <SafeAreaView style={styles.container}>
         
-        {/* Header */}
+        {/* Header - UPDATED FOR QSR TARGET */}
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.greetingText}>Hi, User!</Text>
+            <Text style={styles.greetingText}>Hi, Store #104</Text>
             <Text style={styles.dateText}>{dateString}</Text>
           </View>
           <View style={styles.headerRight}>
@@ -260,10 +260,20 @@ export default function App() {
                 </ScrollView>
                 <Text style={styles.scrollHint}>Swipe graph to see more ➡</Text>
 
+                {/* --- UPDATED INSIGHT SECTION START --- */}
                 <View style={styles.insightBox}>
-                  <Text style={styles.insightTitle}>Insight Analysis</Text>
+                  <Text style={styles.insightTitle}>AI Diagnosis</Text>
                   <Text style={styles.insightText}>
-                    At 6:00 PM, power draw spiked to 8.5kW despite constant runtime. This is a critical indicator of a compressor stall or electrical fault.
+                    <Text style={{fontWeight:'bold'}}>Root Cause:</Text> HVAC runtime is normal, but energy usage spiked 400%. This signature indicates a <Text style={{fontWeight:'bold'}}>Seized Compressor Bearing</Text>.
+                  </Text>
+                  
+                  <View style={{height:1, backgroundColor:'#FFD080', marginVertical:10}}/>
+                  
+                  <Text style={styles.insightText}>
+                    <Text style={{fontWeight:'bold', color:'#C04000'}}>Financial Impact:</Text> This unit is currently wasting <Text style={{fontWeight:'bold'}}>$18.50 per day</Text>. 
+                  </Text>
+                  <Text style={{fontSize:12, color:'#666', marginTop:5}}>
+                    Projected loss next 30 days: <Text style={{fontWeight:'bold', color:'red'}}>$555.00</Text>
                   </Text>
                 </View>
 
@@ -271,8 +281,9 @@ export default function App() {
                   style={styles.resolveButton}
                   onPress={() => setHistoryVisible(false)}
                 >
-                  <Text style={styles.resolveButtonText}>Resolve Issue</Text>
+                  <Text style={styles.resolveButtonText}>Schedule Repair ($0 - Warranty)</Text>
                 </TouchableOpacity>
+                {/* --- UPDATED INSIGHT SECTION END --- */}
                 
                 <View style={{height: 40}} /> 
               </ScrollView>
@@ -361,31 +372,17 @@ const styles = StyleSheet.create({
   badgeText: { color: '#00A836', fontSize: 13, fontWeight: '700' },
 
   card: { backgroundColor: COLORS.card, borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8 },
-  rowCards: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  cardHalf: { flex: 1 },
-  hvacCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 0, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6, width: '100%' },
-  hvacBottomCard: { minHeight: 140 },
-  hvacStatusText: { fontSize: 16, fontWeight: '700', color: '#4A4A4A' },
-  hvacDot: { width: 10, height: 10, borderRadius: 6, marginRight: 10 },
-  hvacSwitch: { transform: [{ scale: 1.8 }] },
   topCard: { minHeight: 180 },
-  controlCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 20, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 6 },
-  controlBottomCard: { minHeight: 140 },
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   controlButton: { backgroundColor: '#F2F2F7', width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 4 },
   controlButtonText: { fontSize: 52, color: COLORS.textDark, lineHeight: 52 },
-  controlTemp: { fontSize: 28, fontWeight: '700', color: '#1c1c1e' },
-  leftColumn: { flex: 1, marginRight: 12 },
-  rightColumn: { flex: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: '700', color: '#1c1c1e' },
   statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F2F7', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
   statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#34C759', marginRight: 6 },
   statusText: { fontSize: 18, fontWeight: '600', color: '#34C759' },
 
-  thermostatRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tempLarge: { fontSize: 80, fontWeight: '300', color: '#1c1c1e', marginBottom: 16 },
-  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 12, gap: 20 },
   thermostatSwitchContainer: { justifyContent: 'center', alignItems: 'center' },
   thermostatSwitch: { transform: [{ scale: 1.8 }] },
   switchBottomContainer: { position: 'absolute', bottom: 30, left: 30 },
